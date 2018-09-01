@@ -15,21 +15,29 @@
 #import <sys/types.h>
 #import <time.h>
 
+#define PACKET_LENGTH 64
+#define MESSAGE_LENGTH 1024
+#define COMMAND_LENGTH 128
+#define MAX_CONNECTIONS 16
+#define DEFAULT_PORT 5000
+
 int main (int argc, const char * argv[]) {
 
-    FILE *image_file_descriptor;
-
     int raux;
-    int read_aux;
-    int wrote_aux;
-
-    char buffer[1024] = {0};
-    char filename[] = "lena.bmp\0";
+    int port_number;
 
     int socket_descriptor;
     int client_socket_descriptor;
 
     struct sockaddr_in server_addr_descriptor;
+
+    // Seed the random number generator.
+
+    srand(time(NULL));
+
+    // Get the port number as a command line argument.
+
+    port_number = argc < 2 ? DEFAULT_PORT : atoi(argv[1]);
 
     // Creates an unnamed socket inside the kernel and returns an integer
     // known as the socket descriptor. The function socket() takes a
@@ -51,7 +59,7 @@ int main (int argc, const char * argv[]) {
 
 	server_addr_descriptor.sin_family = AF_INET;
 	server_addr_descriptor.sin_addr.s_addr = htonl(INADDR_ANY);
-	server_addr_descriptor.sin_port = htons(5003);
+	server_addr_descriptor.sin_port = htons(port_number);
 
     // The call to the function bind() assigns the details specified in
     // the structure 'server_addr_descriptor' to the socket created above.
@@ -72,7 +80,7 @@ int main (int argc, const char * argv[]) {
      // The call to the function listen() specifies the maximum number of
      // client connections that the server should queue.
 
-	raux = listen(socket_descriptor, 10);
+	raux = listen(socket_descriptor, MAX_CONNECTIONS);
 
     if (raux == 1) {
 
@@ -102,23 +110,61 @@ int main (int argc, const char * argv[]) {
 
     }
 
-    for (int k = 0; k < 10000; k++) {
+    // ...
 
-        // Let's send the name of the image that we'll be sending afterwards.
+    int i, j, count, total_count;
+    char message_buffer[MESSAGE_LENGTH] = {0};
+    char command_buffer[COMMAND_LENGTH] = {0};
 
-        write(client_socket_descriptor, filename, strlen(filename));
+    while (1) {
 
-        // Now, send the image.
+        count = read(client_socket_descriptor, command_buffer, COMMAND_LENGTH);
 
-        image_file_descriptor = fopen(filename, "rb");
+        if (count != COMMAND_LENGTH) {
 
-        while ((read_aux = fread(buffer, sizeof(char), sizeof(buffer), image_file_descriptor)) > 0) {
+            printf("[Server] Invalid command message length.\n");
+            printf("[Server] Error: %s.\n", strerror(errno));
+            printf("[Server] Skipping iteration.\n");
 
-            write(client_socket_descriptor, buffer, read_aux);
+            continue;
 
         }
 
-        fclose(image_file_descriptor);
+        if (strcmp(command_buffer, "terminate") == 0) {
+
+            printf("[Server] Terminating.\n");
+
+            break;
+
+        } else if (strcmp(command_buffer, "hello") == 0) {
+
+            printf("[Server] Generating random message with %i bytes.\n", MESSAGE_LENGTH);
+
+            total_count = 0;
+
+            for (j = 0; j < MESSAGE_LENGTH; j++) {
+
+                message_buffer[j] = ((i + j) % 256) + (rand() % 256);
+
+            }
+
+            for (j = 0; j < MESSAGE_LENGTH; j += PACKET_LENGTH) {
+
+                count = write(client_socket_descriptor, message_buffer + (j * sizeof(char)), PACKET_LENGTH);
+                total_count += count;
+
+                printf("[Server] Sent %i bytes.\n", count);
+
+            }
+
+            printf("[Server] Sent the whole message, totalizing %i bytes.\n", total_count);
+
+        } else {
+
+            printf("[Server] Unknown command.\n");
+            printf("[Server] Skipping iteration.\n");
+
+        }
 
     }
 

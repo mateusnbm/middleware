@@ -15,22 +15,38 @@
 #import <sys/types.h>
 #import <time.h>
 
+#define PACKET_LENGTH 64
+#define MESSAGE_LENGTH 1024
+#define COMMAND_LENGTH 128
+#define DEFAULT_PORT 5000
+#define REPEAT_COUNT 1000
+
 int main (int argc, const char * argv[]) {
 
-    FILE *image_file_descriptor;
-
     int raux;
-    int caux;
-
-    char buffer[1024] = {0};
-    char filename[256] = {0};
-    char ip_address[] = "127.0.0.1";
-    char filepath[256] = "downloads/tcp_";
+    int port_number;
 
     int socket_descriptor;
     int client_socket_descriptor;
 
     struct sockaddr_in server_addr_descriptor;
+
+    int i, j, count;
+    char message_buffer[MESSAGE_LENGTH] = {0};
+    char command_buffer[COMMAND_LENGTH] = {0};
+    char filename_buffer[256] = {0};
+
+    sprintf(filename_buffer, "times/times_tcp_%i_%i.txt", PACKET_LENGTH, MESSAGE_LENGTH);
+
+    long stime, etime, delta;
+    FILE *logs_file = fopen(filename_buffer, "w+");
+
+    clockid_t clk_id = CLOCK_MONOTONIC;
+    struct timespec time_spec;
+
+    // Get the port number as a command line argument.
+
+    port_number = argc < 2 ? DEFAULT_PORT : atoi(argv[1]);
 
     // Create the socket.
 
@@ -48,15 +64,15 @@ int main (int argc, const char * argv[]) {
 	memset(&server_addr_descriptor, '0', sizeof(server_addr_descriptor));
 
 	server_addr_descriptor.sin_family = AF_INET;
-	server_addr_descriptor.sin_port = htons(5003);
+	server_addr_descriptor.sin_port = htons(port_number);
 
     // Convert the url address to its binary representation.
 
-    raux = inet_pton(AF_INET, ip_address, &server_addr_descriptor.sin_addr);
+    raux = inet_pton(AF_INET, "127.0.0.1", &server_addr_descriptor.sin_addr);
 
     if (raux == 0) {
 
-        printf("[Client] Buffer is not a valid string.\n");
+        printf("[Client] Address buffer is not a valid string.\n");
 
         return 0;
 
@@ -85,39 +101,56 @@ int main (int argc, const char * argv[]) {
 
     }
 
-    // ...
+    // Say hello to the server REPEAT_COUNT times and receive a random
+    // message in return every time. We compute the time taken for every
+    // iteration and log it to a file.
 
-    printf("time %ld\n", time(NULL));
+    for (i = 0; i < REPEAT_COUNT; i++) {
 
-    for (int k = 0; k < 10000; k++) {
+        // Get the current clock time in nanoseconds.
 
-        char filepath[256] = "downloads/tcp_";
-        char filename_buffer[256];
-        sprintf(filename_buffer, "downloads/tcp_%i_%s", k, filename);
+        memset(&time_spec, '0', sizeof(timespec));
+        clock_gettime(clk_id, &time_spec);
+        stime = time_spec.tv_nsec;
 
-        // We're expecting the filename that shall be sent, let's read it.
-        // The call to read() waits for a message to arrive if none is available.
+        // Say hello and receive the random message.
 
-        read(socket_descriptor, filename, sizeof(filename)-1);
+        memset(command_buffer, '0', COMMAND_LENGTH);
+        strcpy(command_buffer, "hello\0");
 
-        // Let's create the file and write the received bytes to it.
+        write(socket_descriptor, command_buffer, COMMAND_LENGTH);
 
-        image_file_descriptor = fopen(filename_buffer, "wb+");
+        for (j = 0; j < MESSAGE_LENGTH; j += PACKET_LENGTH) {
 
-        while ((caux = read(socket_descriptor, buffer, sizeof(buffer))) > 0) {
-
-            fwrite(buffer, sizeof(char), caux, image_file_descriptor);
+            read(socket_descriptor, message_buffer + (j * sizeof(char)), PACKET_LENGTH);
 
         }
 
-        fclose(image_file_descriptor);
+        // Compute the time delta in microseconds and write it to a file.
+
+        memset(&time_spec, '0', sizeof(timespec));
+        clock_gettime(clk_id, &time_spec);
+        etime = time_spec.tv_nsec;
+        delta = (etime - stime) / 1000;
+
+        printf("%ld %ld\n", etime, stime);
+        printf("%ld\n", delta);
+
+        count = sprintf(message_buffer, "%ld,", delta);
+        count = fwrite(message_buffer, sizeof(char), count, logs_file);
 
 	}
 
-    printf("time %ld\n", time(NULL));
+    // Tell the server to terminate it's activities.
 
-    // Terminate connections.
+    memset(command_buffer, '0', COMMAND_LENGTH);
+    strcpy(command_buffer, "terminate\0");
 
+    write(socket_descriptor, command_buffer, COMMAND_LENGTH);
+
+    // Terminate stuff.
+
+    fclose(logs_file);
     close(socket_descriptor);
 
     return 0;
