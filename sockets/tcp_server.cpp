@@ -110,7 +110,7 @@ int main (int argc, const char * argv[]) {
 
     }
 
-    // ...
+    // Handle received commands.
 
     int i, j, count, total_count;
     char message_buffer[MESSAGE_LENGTH] = {0};
