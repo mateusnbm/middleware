@@ -1,6 +1,12 @@
 //
 // udp_server.cpp
 //
+// 128 bytes = 0,125 KB
+// 256 bytes = 0,25 KB
+// 1024 bytes = 1 KB
+// 51200 bytes = 50 KB
+// 102400 bytes = 100 KB
+//
 
 #import <stdio.h>
 #import <stdlib.h>
@@ -15,8 +21,8 @@
 #import <sys/types.h>
 #import <time.h>
 
-#define PACKET_LENGTH 64
-#define MESSAGE_LENGTH 1024
+#define PACKET_LENGTH 8192
+#define MESSAGE_LENGTH 102400
 #define COMMAND_LENGTH 128
 #define MAX_CONNECTIONS 16
 #define DEFAULT_PORT 5000
@@ -126,7 +132,7 @@ int main (int argc, const char * argv[]) {
 
         } else if (strcmp(command_buffer, "hello") == 0) {
 
-            printf("[Server] Generating random message with %i bytes.\n", MESSAGE_LENGTH);
+            //printf("[Server] Generating random message with %i bytes.\n", MESSAGE_LENGTH);
 
             total_count = 0;
 
@@ -149,11 +155,11 @@ int main (int argc, const char * argv[]) {
 
                 total_count += count;
 
-                printf("[Server] Sent %i bytes.\n", count);
+                //printf("[Server] Sent %i bytes.\n", count);
 
             }
 
-            printf("[Server] Sent the whole message, totalizing %i bytes.\n", total_count);
+            //printf("[Server] Sent the whole message, totalizing %i bytes.\n", total_count);
 
         } else {
 

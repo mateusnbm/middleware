@@ -1,6 +1,12 @@
 //
 // udp_client.cpp
 //
+// 128 bytes = 0,125 KB
+// 256 bytes = 0,25 KB
+// 1024 bytes = 1 KB
+// 51200 bytes = 50 KB
+// 102400 bytes = 100 KB
+//
 
 #import <stdio.h>
 #import <stdlib.h>
@@ -15,12 +21,12 @@
 #import <sys/types.h>
 #import <time.h>
 
-#define PACKET_LENGTH 64
-#define MESSAGE_LENGTH 1024
+#define PACKET_LENGTH 8192
+#define MESSAGE_LENGTH 102400
 #define COMMAND_LENGTH 128
 #define MAX_CONNECTIONS 16
 #define DEFAULT_PORT 5000
-#define REPEAT_COUNT 1000
+#define REPEAT_COUNT 10000
 
 int main (int argc, const char * argv[]) {
 
@@ -145,8 +151,8 @@ int main (int argc, const char * argv[]) {
         etime = time_spec.tv_nsec;
         delta = (etime - stime) / 1000;
 
-        printf("%ld %ld\n", etime, stime);
-        printf("%ld\n", delta);
+        //printf("%ld %ld\n", etime, stime);
+        //printf("%ld\n", delta);
 
         count = sprintf(message_buffer, "%ld,", delta);
         count = fwrite(message_buffer, sizeof(char), count, logs_file);
@@ -169,6 +175,7 @@ int main (int argc, const char * argv[]) {
 
     // Terminate connections.
 
+    fclose(logs_file);
     close(socket_descriptor);
 
     return 0;
