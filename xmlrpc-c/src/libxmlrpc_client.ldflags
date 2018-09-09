@@ -1,0 +1,1 @@
+-Lblddir/src -lxmlrpc_client -Lblddir/src -Lblddir/lib/libutil -lxmlrpc -lxmlrpc_util -Lblddir/lib/expat/xmlparse -lxmlrpc_xmlparse -Lblddir/lib/expat/xmltok -lxmlrpc_xmltok  -lcurl 

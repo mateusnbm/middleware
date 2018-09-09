@@ -21,8 +21,14 @@
 #import <sys/types.h>
 #import <time.h>
 
-#define PACKET_LENGTH 8192
-#define MESSAGE_LENGTH 102400
+#define PACKET_LENGTH 5000
+#define MESSAGE_LENGTH 100000
+
+//#define PACKET_LENGTH 10240
+//#define MESSAGE_LENGTH 10240 // 10 KB
+//#define MESSAGE_LENGTH 102400 // 100 KB
+//#define MESSAGE_LENGTH 512000 // 500 KB
+
 #define COMMAND_LENGTH 128
 #define MAX_CONNECTIONS 16
 #define DEFAULT_PORT 5000
@@ -142,21 +148,31 @@ int main (int argc, const char * argv[]) {
 
             }
 
-            for (j = 0; j < MESSAGE_LENGTH; j += PACKET_LENGTH) {
+            for (int k = 0; k < 100; k++) {
 
-                count = sendto(
-                    socket_descriptor,
-                    message_buffer + (j * sizeof(char)),
-                    PACKET_LENGTH,
-                    0,
-                    (struct sockaddr *) &client_addr_description,
-                    sizeof(client_addr_description)
-                );
+                for (j = 0; j < MESSAGE_LENGTH; j += PACKET_LENGTH) {
 
-                total_count += count;
+                    count = sendto(
+                        socket_descriptor,
+                        message_buffer + (j * sizeof(char)),
+                        PACKET_LENGTH,
+                        0,
+                        (struct sockaddr *) &client_addr_description,
+                        sizeof(client_addr_description)
+                    );
 
-                //printf("[Server] Sent %i bytes.\n", count);
+                    total_count += count;
 
+                    if (count == -1) {
+
+                        //printf("[Server] Fuck: %s.\n", strerror(errno));
+
+                    }
+
+                    //printf("[Server] Sent %i bytes.\n", count);
+
+                }
+                
             }
 
             //printf("[Server] Sent the whole message, totalizing %i bytes.\n", total_count);

@@ -21,12 +21,21 @@
 #import <sys/types.h>
 #import <time.h>
 
-#define PACKET_LENGTH 8192
-#define MESSAGE_LENGTH 102400
+//#define PACKET_LENGTH 5000
+//#define MESSAGE_LENGTH 100000
+
+#define PACKET_LENGTH 5000
+#define MESSAGE_LENGTH 100000
+
+//#define PACKET_LENGTH 10240
+//#define MESSAGE_LENGTH 10240 // 10 KB
+//#define MESSAGE_LENGTH 102400 // 100 KB
+//#define MESSAGE_LENGTH 512000 // 500 KB
+
 #define COMMAND_LENGTH 128
 #define MAX_CONNECTIONS 16
 #define DEFAULT_PORT 5000
-#define REPEAT_COUNT 10000
+#define REPEAT_COUNT 100//00
 
 int main (int argc, const char * argv[]) {
 
@@ -111,6 +120,8 @@ int main (int argc, const char * argv[]) {
 
     for (i = 0; i < REPEAT_COUNT; i++) {
 
+        printf("%i\n", i);
+
         // Get the current clock time in nanoseconds.
 
         memset(&time_spec, '0', sizeof(timespec));
@@ -131,16 +142,20 @@ int main (int argc, const char * argv[]) {
             sizeof(server_addr_descriptor)
         );
 
-        for (j = 0; j < MESSAGE_LENGTH; j += PACKET_LENGTH) {
+        for (int k = 0; k < 100; k++) {
 
-            recvfrom(
-                socket_descriptor,
-                message_buffer + (j * sizeof(char)),
-                PACKET_LENGTH,
-                0,
-                (struct sockaddr *) NULL,
-                NULL
-             );
+            for (j = 0; j < MESSAGE_LENGTH; j += PACKET_LENGTH) {
+
+                recvfrom(
+                    socket_descriptor,
+                    message_buffer + (j * sizeof(char)),
+                    PACKET_LENGTH,
+                    0,
+                    (struct sockaddr *) NULL,
+                    NULL
+                 );
+
+            }
 
         }
 
