@@ -1,5 +1,5 @@
 //
-// udp_client.cpp
+// tcp_client.cpp
 //
 // 128 bytes = 0,125 KB
 // 256 bytes = 0,25 KB
@@ -21,11 +21,12 @@
 #import <sys/types.h>
 #import <time.h>
 
-//#define PACKET_LENGTH 5000
-//#define MESSAGE_LENGTH 100000
+//#define PACKET_LENGTH 8192
+//#define MESSAGE_LENGTH 102400
 
-#define PACKET_LENGTH 5000
-#define MESSAGE_LENGTH 100000
+#define PACKET_LENGTH 512
+//#define MESSAGE_LENGTH 49152
+#define MESSAGE_LENGTH 512
 
 //#define PACKET_LENGTH 10240
 //#define MESSAGE_LENGTH 10240 // 10 KB
@@ -33,9 +34,8 @@
 //#define MESSAGE_LENGTH 512000 // 500 KB
 
 #define COMMAND_LENGTH 128
-#define MAX_CONNECTIONS 16
 #define DEFAULT_PORT 5000
-#define REPEAT_COUNT 100//00
+#define REPEAT_COUNT 10000
 
 int main (int argc, const char * argv[]) {
 
@@ -43,21 +43,35 @@ int main (int argc, const char * argv[]) {
     int port_number;
 
     int socket_descriptor;
-    int client_socket_descriptor;
+    //int client_socket_descriptor;
+
     struct sockaddr_in server_addr_descriptor;
+
+    int i, j, count;
+    char message_buffer[MESSAGE_LENGTH] = {0};
+    char command_buffer[COMMAND_LENGTH] = {0};
+    char filename_buffer[256] = {0};
+
+    sprintf(filename_buffer, "times/times_tcp_%i_%i.txt", PACKET_LENGTH, MESSAGE_LENGTH);
+
+    long stime, etime, delta;
+    FILE *logs_file = fopen(filename_buffer, "w+");
+
+    clockid_t clk_id = CLOCK_MONOTONIC;
+    struct timespec time_spec;
 
     // Get the port number as a command line argument.
 
     port_number = argc < 2 ? DEFAULT_PORT : atoi(argv[1]);
 
-    // Create socket (SOCK_DGRAM specifies UDP).
+    // Create the socket.
 
-    socket_descriptor = socket(AF_INET, SOCK_DGRAM, 0);
+    socket_descriptor = socket(AF_INET, SOCK_STREAM, 0);
 
 	if (socket_descriptor == -1) {
 
         printf("[Client] Failed to create endpoint for communication.\n");
-        printf("[Client] Error: %s.", strerror(errno));
+        printf("[Client] Error: %s.\n", strerror(errno));
 
         return 0;
 
@@ -68,20 +82,20 @@ int main (int argc, const char * argv[]) {
 	server_addr_descriptor.sin_family = AF_INET;
 	server_addr_descriptor.sin_port = htons(port_number);
 
-    // Convert url address to its binary representation.
+    // Convert the url address to its binary representation.
 
     raux = inet_pton(AF_INET, "127.0.0.1", &server_addr_descriptor.sin_addr);
 
     if (raux == 0) {
 
-        printf("[Client] Buffer is not a valid string.\n");
+        printf("[Client] Address buffer is not a valid string.\n");
 
         return 0;
 
     } else if (raux < 0) {
 
         printf("[Client] Failed to convert internet address to binary format.\n");
-        printf("[Client] Error: %s.", strerror(errno));
+        printf("[Client] Error: %s.\n", strerror(errno));
 
         return 0;
 
@@ -94,33 +108,20 @@ int main (int argc, const char * argv[]) {
 
     raux = connect(socket_descriptor, (struct sockaddr *)&server_addr_descriptor, sizeof(server_addr_descriptor));
 
-	if (raux == -1) {
+    if (raux == -1) {
 
         printf("[Client] Failed to initiate connection.\n");
-        printf("[Client] Error: %s.", strerror(errno));
+        printf("[Client] Error: %s.\n", strerror(errno));
 
         return 0;
 
-	}
+    }
 
-    // ...
-
-    int i, j, count;
-    char message_buffer[MESSAGE_LENGTH] = {0};
-    char command_buffer[COMMAND_LENGTH] = {0};
-    char filename_buffer[256] = {0};
-
-    sprintf(filename_buffer, "times/times_udp_%i_%i.txt", PACKET_LENGTH, MESSAGE_LENGTH);
-
-    long stime, etime, delta;
-    FILE *logs_file = fopen(filename_buffer, "w+");
-
-    clockid_t clk_id = CLOCK_MONOTONIC;
-    struct timespec time_spec;
+    // Say hello to the server REPEAT_COUNT times and receive a random
+    // message in return every time. We compute the time taken for every
+    // iteration and log it to a file.
 
     for (i = 0; i < REPEAT_COUNT; i++) {
-
-        printf("%i\n", i);
 
         // Get the current clock time in nanoseconds.
 
@@ -133,29 +134,11 @@ int main (int argc, const char * argv[]) {
         memset(command_buffer, '0', COMMAND_LENGTH);
         strcpy(command_buffer, "hello\0");
 
-        count = sendto(
-            socket_descriptor,
-            command_buffer,
-            COMMAND_LENGTH,
-            0,
-            (struct sockaddr *) NULL,
-            sizeof(server_addr_descriptor)
-        );
+        write(socket_descriptor, command_buffer, COMMAND_LENGTH);
 
-        for (int k = 0; k < 100; k++) {
+        for (j = 0; j < MESSAGE_LENGTH; j += PACKET_LENGTH) {
 
-            for (j = 0; j < MESSAGE_LENGTH; j += PACKET_LENGTH) {
-
-                recvfrom(
-                    socket_descriptor,
-                    message_buffer + (j * sizeof(char)),
-                    PACKET_LENGTH,
-                    0,
-                    (struct sockaddr *) NULL,
-                    NULL
-                 );
-
-            }
+            read(socket_descriptor, message_buffer + (j * sizeof(char)), PACKET_LENGTH);
 
         }
 
@@ -172,23 +155,16 @@ int main (int argc, const char * argv[]) {
         count = sprintf(message_buffer, "%ld,", delta);
         count = fwrite(message_buffer, sizeof(char), count, logs_file);
 
-    }
+	}
 
     // Tell the server to terminate it's activities.
 
     memset(command_buffer, '0', COMMAND_LENGTH);
     strcpy(command_buffer, "terminate\0");
 
-    sendto(
-        socket_descriptor,
-        command_buffer,
-        COMMAND_LENGTH,
-        0,
-        (struct sockaddr *) NULL,
-        sizeof(server_addr_descriptor)
-    );
+    write(socket_descriptor, command_buffer, COMMAND_LENGTH);
 
-    // Terminate connections.
+    // Terminate stuff.
 
     fclose(logs_file);
     close(socket_descriptor);

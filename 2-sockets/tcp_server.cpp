@@ -1,5 +1,5 @@
 //
-// udp_server.cpp
+// tcp_server.cpp
 //
 // 128 bytes = 0,125 KB
 // 256 bytes = 0,25 KB
@@ -21,8 +21,12 @@
 #import <sys/types.h>
 #import <time.h>
 
-#define PACKET_LENGTH 5000
-#define MESSAGE_LENGTH 100000
+//#define PACKET_LENGTH 8192
+//#define MESSAGE_LENGTH 102400
+
+#define PACKET_LENGTH 4096
+//#define MESSAGE_LENGTH 49152
+#define MESSAGE_LENGTH 98304
 
 //#define PACKET_LENGTH 10240
 //#define MESSAGE_LENGTH 10240 // 10 KB
@@ -42,8 +46,10 @@ int main (int argc, const char * argv[]) {
     int client_socket_descriptor;
 
     struct sockaddr_in server_addr_descriptor;
-    struct sockaddr_in client_addr_description;
-    socklen_t length = sizeof(client_addr_description);
+
+    // Seed the random number generator.
+
+    srand(time(NULL));
 
     // Get the port number as a command line argument.
 
@@ -52,14 +58,14 @@ int main (int argc, const char * argv[]) {
     // Creates an unnamed socket inside the kernel and returns an integer
     // known as the socket descriptor. The function socket() takes a
     // domain/family as its first argument. For intenet family of IPv4 we
-    // user AF_INET. The type parameter (2nd) specified that we are using UDP.
+    // user AF_INET.
 
-    socket_descriptor = socket(AF_INET, SOCK_DGRAM, 0);
+    socket_descriptor = socket(AF_INET, SOCK_STREAM, 0);
 
     if (socket_descriptor == -1) {
 
         printf("[Server] Failed to create endpoint for communication.\n");
-        printf("[Server] Error: %s.", strerror(errno));
+        printf("[Server] Error: %s.\n", strerror(errno));
 
         return 0;
 
@@ -79,7 +85,7 @@ int main (int argc, const char * argv[]) {
     if (raux == -1) {
 
         printf("[Server] Failed to assign name to the socket.\n");
-        printf("[Server] Error: %s.", strerror(errno));
+        printf("[Server] Error: %s.\n", strerror(errno));
 
         close(socket_descriptor);
 
@@ -95,7 +101,24 @@ int main (int argc, const char * argv[]) {
     if (raux == 1) {
 
         printf("[Server] Failed to mark socket as accepting connections.\n");
-        printf("[Server] Error: %s.", strerror(errno));
+        printf("[Server] Error: %s.\n", strerror(errno));
+
+        close(socket_descriptor);
+
+        return 0;
+
+    }
+
+    // A call to accept() puts the server to sleep while no requests
+    // are made, when the three way TCP handshake is complete, the
+    // function returns the socket descriptor representing the client.
+
+    client_socket_descriptor = accept(socket_descriptor, (struct sockaddr *) NULL, NULL);
+
+    if (client_socket_descriptor < 0) {
+
+        printf("[Server] Failed to accept pending connection.\n");
+        printf("[Server] Error: %s.\n", strerror(errno));
 
         close(socket_descriptor);
 
@@ -111,14 +134,7 @@ int main (int argc, const char * argv[]) {
 
     while (1) {
 
-        count = recvfrom(
-            socket_descriptor,
-            command_buffer,
-            COMMAND_LENGTH,
-            0,
-            (struct sockaddr *) &client_addr_description,
-            &length
-        );
+        count = read(client_socket_descriptor, command_buffer, COMMAND_LENGTH);
 
         if (count != COMMAND_LENGTH) {
 
@@ -148,31 +164,13 @@ int main (int argc, const char * argv[]) {
 
             }
 
-            for (int k = 0; k < 100; k++) {
+            for (j = 0; j < MESSAGE_LENGTH; j += PACKET_LENGTH) {
 
-                for (j = 0; j < MESSAGE_LENGTH; j += PACKET_LENGTH) {
+                count = write(client_socket_descriptor, message_buffer + (j * sizeof(char)), PACKET_LENGTH);
+                total_count += count;
 
-                    count = sendto(
-                        socket_descriptor,
-                        message_buffer + (j * sizeof(char)),
-                        PACKET_LENGTH,
-                        0,
-                        (struct sockaddr *) &client_addr_description,
-                        sizeof(client_addr_description)
-                    );
+                //printf("[Server] Sent %i bytes.\n", count);
 
-                    total_count += count;
-
-                    if (count == -1) {
-
-                        //printf("[Server] Fuck: %s.\n", strerror(errno));
-
-                    }
-
-                    //printf("[Server] Sent %i bytes.\n", count);
-
-                }
-                
             }
 
             //printf("[Server] Sent the whole message, totalizing %i bytes.\n", total_count);
@@ -186,8 +184,9 @@ int main (int argc, const char * argv[]) {
 
     }
 
-    // Terminate connections.
+    // Terminate the connections and return.
 
+    close(client_socket_descriptor);
     close(socket_descriptor);
 
     return 0;
