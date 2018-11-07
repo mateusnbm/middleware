@@ -21,6 +21,10 @@ int main(int argc, char **) {
     ClientProxy proxy2 = ClientProxy(host, port);
     ClientProxy proxy3 = ClientProxy(host, port);
 
+    proxy1.secure("secret-password");
+    proxy2.secure("secret-password");
+    proxy3.secure("secret-password");
+
     if (proxy1.setup() < 0 || proxy2.setup() < 0 || proxy3.setup() < 0) {
 
         printf("Error: %s.\n", strerror(errno));

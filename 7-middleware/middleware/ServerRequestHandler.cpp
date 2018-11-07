@@ -25,6 +25,25 @@ void * handleConnection(void * arguments) {
 
         argument->handler->readRequestData(argument->client_descriptor, &data);
 
+        if (argument->handler->password.empty() == false) {
+
+            printf("[ServerRequestHandler] Received data (encrypted): %s.\n", data);
+
+            string hash = sha256(argument->handler->password);
+            BLOWFISH bf(hash);
+            string en_payload = string(data);
+            string de_payload = bf.Decrypt_CBC(en_payload);
+
+            free(data);
+
+            data = (char *) malloc(sizeof(char)*(de_payload.size()+1));
+            std::copy(de_payload.begin(), de_payload.end(), data);
+            data[de_payload.size()] = '\0';
+
+        }
+
+        printf("[ServerRequestHandler] Received data (decrypted): %s.\n", data);
+
         if (strcmp(data, "terminate") == 0) { break; }
 
         Call call = Call(data);
@@ -34,6 +53,27 @@ void * handleConnection(void * arguments) {
 
         char * result_str = result.serialize();
         int result_len = string(result_str).length()+1;
+
+        printf("[ServerRequestHandler] Send data (decrypted): %s.\n", result_str);
+
+        if (argument->handler->password.empty() == false) {
+
+            string hash = sha256(argument->handler->password);
+            BLOWFISH bf(hash);
+            string de_payload = string(result_str);
+            string en_payload = bf.Encrypt_CBC(de_payload);
+
+            free(result_str);
+
+            result_str = (char *) malloc(sizeof(char)*(en_payload.size()+1));
+            std::copy(en_payload.begin(), en_payload.end(), result_str);
+            result_str[en_payload.size()] = '\0';
+
+            result_len = en_payload.size() + 1;
+
+            printf("[ServerRequestHandler] Send data (encrypted): %s.\n", result_str);
+
+        }
 
         Request response = Request(result_str, result_len);
         int response_len = 0;
@@ -53,6 +93,37 @@ void * handleConnection(void * arguments) {
     free(argument);
 
     return NULL;
+
+}
+
+#pragma mark -
+#pragma mark - Public
+
+ServerRequestHandler::ServerRequestHandler(const char host[], unsigned int port) {
+
+    char paux[7];
+
+    this->host = host;
+    this->port = port;
+    this->address = (char *) malloc(sizeof(char) * (strlen(host) + 7));
+    this->client_address_description_len = sizeof(this->client_address_description);
+
+    paux[0] = ':';
+    paux[1] = ((port / 1000) % 10) + '0';
+    paux[2] = ((port / 100) % 10) + '0';
+    paux[3] = ((port / 10) % 10) + '0';
+    paux[4] = (port % 10) + '0';
+    paux[5] = '/';
+    paux[6] = 0;
+
+    strcpy(this->address, host);
+    strcat(this->address, paux);
+
+}
+
+ServerRequestHandler::~ServerRequestHandler() {
+
+    free(this->address);
 
 }
 
@@ -99,37 +170,6 @@ int ServerRequestHandler::readRequestData(int socket_descriptor, char ** data) {
 
 }
 
-#pragma mark -
-#pragma mark - Public
-
-ServerRequestHandler::ServerRequestHandler(const char host[], unsigned int port) {
-
-    char paux[7];
-
-    this->host = host;
-    this->port = port;
-    this->address = (char *) malloc(sizeof(char) * (strlen(host) + 7));
-    this->client_address_description_len = sizeof(this->client_address_description);
-
-    paux[0] = ':';
-    paux[1] = ((port / 1000) % 10) + '0';
-    paux[2] = ((port / 100) % 10) + '0';
-    paux[3] = ((port / 10) % 10) + '0';
-    paux[4] = (port % 10) + '0';
-    paux[5] = '/';
-    paux[6] = 0;
-
-    strcpy(this->address, host);
-    strcat(this->address, paux);
-
-}
-
-ServerRequestHandler::~ServerRequestHandler() {
-
-    free(this->address);
-
-}
-
 int ServerRequestHandler::setupSocket(Invoker * invoker, unsigned int max_connections) {
 
     int aux;
@@ -167,6 +207,14 @@ int ServerRequestHandler::setupSocket(Invoker * invoker, unsigned int max_connec
     if (aux == 1) { return -3;}
 
     this->invoker = invoker;
+
+    return 0;
+
+}
+
+int ServerRequestHandler::secure(const char key[]) {
+
+    this->password = string(key);
 
     return 0;
 

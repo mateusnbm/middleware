@@ -33,10 +33,6 @@ ClientRequestHandler::ClientRequestHandler(const char host[], unsigned int port)
 
 ClientRequestHandler::~ClientRequestHandler() {
 
-    char terminate[] = "<9>terminate\0";
-
-    this->sendData(terminate, 12);
-
     free(this->address);
 
     shutdown(this->socket_descriptor, SHUT_RDWR);

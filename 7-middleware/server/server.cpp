@@ -40,6 +40,7 @@ int main(int const, const char ** const) {
 
     if (handler.setupSocket(&invoker, max_connections) == 0) {
 
+        handler.secure("secret-password");
         handler.run();
 
     } else {

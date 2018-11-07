@@ -15,6 +15,8 @@
 #import <sys/types.h>
 #import <pthread.h>
 
+#import "SHA256.h"
+#import "Blowfish.h"
 #import "Call.h"
 #import "CallStack.h"
 #import "Request.h"
@@ -28,6 +30,11 @@ class ServerRequestHandler {
 
     public:
 
+        char * address;
+        const char * host;
+        unsigned int port;
+        string password;
+
         int socket_descriptor;
         struct sockaddr_in address_descriptor;
         struct sockaddr_in client_address_description;
@@ -35,18 +42,15 @@ class ServerRequestHandler {
 
         Invoker * invoker;
 
+        ServerRequestHandler(const char host[], unsigned int port);
+        ~ServerRequestHandler();
+
         int sendData(int socket_descriptor, char buffer[], unsigned int length);
         int readData(int socket_descriptor, char * buffer, unsigned int length);
         int readRequestData(int socket_descriptor, char ** data);
 
-        char * address;
-        const char * host;
-        unsigned int port;
-
-        ServerRequestHandler(const char host[], unsigned int port);
-        ~ServerRequestHandler();
-
         int setupSocket(Invoker * invoker, unsigned int max_connections);
+        int secure(const char key[]);
         int run();
 
 };
