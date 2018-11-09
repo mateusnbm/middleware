@@ -93,6 +93,18 @@ void CallStack::addInteger(int value) {
 
 }
 
+void CallStack::addFloat(float value) {
+
+    this->stack.push_back(to_string(value));
+
+}
+
+void CallStack::addBoolean(bool value) {
+
+    this->stack.push_back(string(value == true ? "1" : "0"));
+
+}
+
 char * CallStack::getItemAtIndex(int index) {
 
     string item = this->stack.at(index);
@@ -105,6 +117,56 @@ char * CallStack::getItemAtIndex(int index) {
     buffer[len-1] = '\0';
 
     return buffer;
+
+}
+
+char * CallStack::getCharsAtIndex(int index) {
+
+    return this->getItemAtIndex(index);
+
+}
+
+string CallStack::getStringAtIndex(int index) {
+
+    char * item = this->getItemAtIndex(index);
+    string value = string(item);
+
+    free(item);
+
+    return value;
+
+}
+
+int CallStack::getIntAtIndex(int index) {
+
+    char * item = this->getItemAtIndex(index);
+    int value = atoi(item);
+
+    free(item);
+
+    return value;
+
+}
+
+float CallStack::getFloatAtIndex(int index) {
+
+    char * item = this->getItemAtIndex(index);
+    float value = atof(item);
+
+    free(item);
+
+    return value;
+
+}
+
+bool CallStack::getBooleanAtIndex(int index) {
+
+    char * item = this->getItemAtIndex(index);
+    bool value = item[0] == '0' ? false : true;
+
+    free(item);
+
+    return value;
 
 }
 

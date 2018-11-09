@@ -25,7 +25,16 @@ class CallStack {
         void addConstChars(const char value[]);
         void addString(string value);
         void addInteger(int value);
+        void addFloat(float value);
+        void addBoolean(bool value);
+
         char * getItemAtIndex(int index);
+        char * getCharsAtIndex(int index);
+        string getStringAtIndex(int index);
+        int getIntAtIndex(int index);
+        float getFloatAtIndex(int index);
+        bool getBooleanAtIndex(int index);
+
         char * serialize();
 
 };
