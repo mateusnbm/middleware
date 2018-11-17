@@ -6,6 +6,8 @@
 #import "Call.h"
 #import "Request.h"
 
+#define DEBUG 1
+
 #pragma mark -
 #pragma mark - Private
 
@@ -22,29 +24,33 @@ ClientProxy::ClientProxy(const char host[], unsigned int port) {
 
 ClientProxy::~ClientProxy() {
 
-    if (this->password.empty() == false) {
+    if (this->connected == true) {
 
-        string hash = sha256(this->password);
-        BLOWFISH bf(hash);
-        string de_payload = string("terminate");
-        string en_payload = bf.Encrypt_CBC(de_payload);
+        if (this->password.empty() == false) {
 
-        string payload = "<" + to_string(en_payload.size()) + ">" + en_payload;
-        int request_len = payload.size() + 1;
+            string hash = sha256(this->password);
+            BLOWFISH bf(hash);
+            string de_payload = string("terminate");
+            string en_payload = bf.Encrypt_CBC(de_payload);
 
-        char * request = (char *) malloc(sizeof(char)*(payload.size()+1));
-        std::copy(payload.begin(), payload.end(), request);
-        request[payload.size()] = '\0';
+            string payload = "<" + to_string(en_payload.size()) + ">" + en_payload;
+            int request_len = payload.size() + 1;
 
-        this->handler->sendData(request, request_len);
+            char * request = (char *) malloc(sizeof(char)*(payload.size()+1));
+            std::copy(payload.begin(), payload.end(), request);
+            request[payload.size()] = '\0';
 
-        free(request);
+            this->handler->sendData(request, request_len);
 
-    } else {
+            free(request);
 
-        char terminate[] = "<9>terminate\0";
+        } else {
 
-        this->handler->sendData(terminate, 12);
+            char terminate[] = "<9>terminate\0";
+
+            this->handler->sendData(terminate, 12);
+
+        }
 
     }
 
@@ -62,6 +68,8 @@ int ClientProxy::secure(const char key[]) {
 
 int ClientProxy::setup() {
 
+    this->connected = true;
+
     return this->handler->setup();
 
 }
@@ -73,7 +81,9 @@ CallStack ClientProxy::invoke(const char method[], CallStack stack) {
     int str_call_len = 0;
     char * str_call = r_call.serialize(&str_call_len);
 
-    printf("[ClientProxy] Send data (decrypted): %s.\n", str_call);
+    #if DEBUG
+    printf("[ClientProxy] Connection ID %i, Sending %i bytes, Raw data:\n\n%s\n\n", this->handler->socket_descriptor, str_call_len, str_call);
+    #endif
 
     if (this->password.empty() == false) {
 
@@ -90,7 +100,9 @@ CallStack ClientProxy::invoke(const char method[], CallStack stack) {
 
         str_call_len = en_payload.size() + 1;
 
-        printf("[ClientProxy] Send data (encrypted): %s.\n", str_call);
+        #if DEBUG
+        printf("[ClientProxy] Connection ID %i, Sending %i bytes, Encrypted data:\n\n%s\n\n", this->handler->socket_descriptor, str_call_len, str_call);
+        #endif
 
     }
 
@@ -127,7 +139,9 @@ CallStack ClientProxy::invoke(const char method[], CallStack stack) {
 
     if (this->password.empty() == false) {
 
-        printf("[ClientProxy] Received data (encrypted): %s.\n", data);
+        #if DEBUG
+        printf("[ClientProxy] Connection ID %i, Received %i bytes, Encrypted data:\n\n%s\n\n", this->handler->socket_descriptor, n, data);
+        #endif
 
         string hash = sha256(this->password);
         BLOWFISH bf(hash);
@@ -136,13 +150,16 @@ CallStack ClientProxy::invoke(const char method[], CallStack stack) {
 
         free(data);
 
+        n = de_payload.size();
         data = (char *) malloc(sizeof(char)*(de_payload.size()+1));
         std::copy(de_payload.begin(), de_payload.end(), data);
         data[de_payload.size()] = '\0';
 
     }
 
-    printf("[ClientProxy] Received data (decrypted): %s.\n", data);
+    #if DEBUG
+    printf("[ClientProxy] Connection ID %i, Received %i bytes, Raw data:\n\n%s\n\n", this->handler->socket_descriptor, n, data);
+    #endif
 
     string item = string(data);
     unsigned int len = item.length()+1;

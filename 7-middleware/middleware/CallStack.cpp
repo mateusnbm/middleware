@@ -105,6 +105,51 @@ void CallStack::addBoolean(bool value) {
 
 }
 
+void CallStack::addVector(vector <int> & value) {
+
+    string arr = string("");
+
+    for (int i = 0; i < value.size(); i++) {
+
+        arr = arr + to_string(value[i]) + "-";
+
+    }
+
+    this->stack.push_back(arr);
+
+}
+
+void CallStack::addVector(vector <float> & value) {
+
+    string arr = string("");
+
+    for (int i = 0; i < value.size(); i++) {
+
+        arr = arr + to_string(value[i]) + "-";
+
+    }
+
+    this->stack.push_back(arr);
+
+}
+
+void CallStack::addFile(const char path[], bool compress) {
+
+    FILE * fp = fopen(path, "rb");
+    fseek(fp, 0L, SEEK_END);
+    int fsize = ftell(fp);
+    fseek(fp, 0L, SEEK_SET);
+
+    unsigned char * data = (unsigned char *) malloc(fsize*sizeof(unsigned char));
+    fread(data, sizeof(unsigned char), fsize, fp);
+
+    this->stack.push_back(base64_encode(data, fsize));
+
+    fclose(fp);
+    free(data);
+
+}
+
 char * CallStack::getItemAtIndex(int index) {
 
     string item = this->stack.at(index);
@@ -167,6 +212,72 @@ bool CallStack::getBooleanAtIndex(int index) {
     free(item);
 
     return value;
+
+}
+
+vector <int> CallStack::getIntsVectorAtIndex(int index) {
+
+    string buffer = string("");
+    vector <int> value;
+    char * item = this->getItemAtIndex(index);
+
+    for (int i = 0; item[i] != '\0'; i++) {
+
+        if (item[i] == '-') {
+
+            value.push_back(stoi(buffer));
+            buffer = string("");
+
+        } else {
+
+            buffer = buffer + item[i];
+
+        }
+
+    }
+
+    return value;
+
+}
+
+vector <float> CallStack::getFloatsVectorAtIndex(int index) {
+
+    string buffer = string("");
+    vector <float> value;
+    char * item = this->getItemAtIndex(index);
+
+    for (int i = 0; item[i] != '\0'; i++) {
+
+        if (item[i] == '-') {
+
+            value.push_back(stof(buffer));
+            buffer = string("");
+
+        } else {
+
+            buffer = buffer + item[i];
+
+        }
+
+    }
+
+    return value;
+
+}
+
+char * CallStack::getFileAtIndex(int index, int * file_length) {
+
+    string item = this->stack.at(index);
+    vector <unsigned char> bytes = base64_decode(item);
+    char * data = (char *) malloc(sizeof(char)*(bytes.size()+1));
+
+    for (int i = 0; i < bytes.size(); i++) { data[i] = bytes[i]; }
+
+    data[bytes.size()] = '\0';
+
+    *file_length = bytes.size();
+
+    return data;
 
 }
 

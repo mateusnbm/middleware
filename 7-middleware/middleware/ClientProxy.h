@@ -16,6 +16,7 @@ class ClientProxy {
 
     private:
 
+        bool connected;
         const char * host;
         unsigned int port;
         string password;

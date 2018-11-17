@@ -23,7 +23,11 @@ void * handleConnection(void * arguments) {
 
         char * data;
 
+        printf("[1]\n");
+
         argument->handler->readRequestData(argument->client_descriptor, &data);
+
+        printf("[2]\n");
 
         if (argument->handler->password.empty() == false) {
 
@@ -41,6 +45,8 @@ void * handleConnection(void * arguments) {
             data[de_payload.size()] = '\0';
 
         }
+
+        printf("[3]\n");
 
         printf("[ServerRequestHandler] Received data (decrypted): %s.\n", data);
 
@@ -155,9 +161,12 @@ int ServerRequestHandler::readRequestData(int socket_descriptor, char ** data) {
 
     }
 
-    this->readData(socket_descriptor, b, n);
+    char * buf = (char *) malloc(sizeof(char)*(n+1));
+    buf[n] = '\0';
 
-    string item = string(b);
+    this->readData(socket_descriptor, buf, n);
+
+    string item = string(buf);
     unsigned int len = item.length()+1;
     const char * tmp = item.c_str();
     char * buffer = (char *) malloc(len * sizeof(char));
@@ -165,6 +174,8 @@ int ServerRequestHandler::readRequestData(int socket_descriptor, char ** data) {
     buffer[len-1] = '\0';
 
     *data = buffer;
+
+    free(buf);
 
     return 0;
 

@@ -18,13 +18,15 @@ class ClientRequestHandler {
 
     private:
 
-        int socket_descriptor;
+        //int socket_descriptor;
         struct sockaddr_in address_descriptor;
 
         char buffer_in[1024];
         char buffer_out[1024];
 
     public:
+
+        int socket_descriptor;
 
         char * address;
         const char * host;
