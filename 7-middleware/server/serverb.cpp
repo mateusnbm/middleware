@@ -11,6 +11,7 @@
 
 #import "Sample.h"
 #import "Sleeper.h"
+#import "Grayscale.h"
 
 #import "../middleware/Method.h"
 #import "../middleware/Invoker.h"
@@ -31,17 +32,19 @@ int main(int const, const char ** argv) {
 
     Sample sampleMethod = Sample();
     Sleeper sleeperMethod = Sleeper();
+    Grayscale grayscaleMethod = Grayscale();
 
     Invoker invoker = Invoker();
     invoker.registerMethod("sample", &sampleMethod);
     invoker.registerMethod("sleeper", &sleeperMethod);
+    invoker.registerMethod("grayscale", &grayscaleMethod);
 
     ServerRequestHandler handler = ServerRequestHandler(host, port);
 
     if (handler.setupSocket(&invoker, max_connections) == 0) {
 
         handler.compress();
-        //handler.secure("secret-password");
+        handler.secure("secret-password");
         handler.run();
 
     } else {

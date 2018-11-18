@@ -4,6 +4,8 @@
 
 #import "Compression.h"
 
+#define DEBUG 0
+
 #pragma mark -
 #pragma mark - Private
 
@@ -61,7 +63,9 @@ int compress_one_file(const char infilename[], const char outfilename[]) {
     fclose(infile);
     gzclose(outfile);
 
+    #if DEBUG
     printf("[Compression] Before: %ld bytes, After: %ld bytes, Factor %4.2f%%.\n\n", total_read, file_size(outfilename), (1.0-file_size(outfilename)*1.0/total_read)*100.0);
+    #endif
 
     return 0;
 

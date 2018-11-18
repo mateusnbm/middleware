@@ -4,7 +4,7 @@
 
 #include "ServerRequestHandler.h"
 
-#define DEBUG 1
+#define DEBUG 0
 
 #pragma mark -
 #pragma mark - Private
@@ -290,7 +290,9 @@ int ServerRequestHandler::run() {
 
         if (client_descriptor < 0) { return -1; }
 
+        #if DEBUG
         printf("[Server] Accepted new connection (%i).\n\n", client_descriptor);
+        #endif
 
         Argument * argument = (Argument *) malloc(sizeof(Argument));
 

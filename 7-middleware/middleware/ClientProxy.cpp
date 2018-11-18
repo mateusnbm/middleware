@@ -6,7 +6,7 @@
 #import "Call.h"
 #import "Request.h"
 
-#define DEBUG 1
+#define DEBUG 0
 
 #pragma mark -
 #pragma mark - Private
@@ -123,7 +123,6 @@ CallStack ClientProxy::invoke(const char method[], CallStack stack) {
     if (this->password.empty() == false) {
 
         string hash = sha256(this->password);
-        cout << "HASH: " << hash << endl;
         BLOWFISH bf(hash);
         string de_payload = string(str_call);
         string en_payload = bf.Encrypt_CBC(de_payload);

@@ -12,8 +12,6 @@
 
 CallStack Sample::execute(CallStack inputs) {
 
-    /*
-
     char * param1 = inputs.getCharsAtIndex(0);
     printf("[SERVER] Sample procedure call, Parameter 1:\n\n%s\n\n", param1);
     free(param1);
@@ -46,17 +44,7 @@ CallStack Sample::execute(CallStack inputs) {
     fwrite(image_data, sizeof(char), image_lenght, image_file);
     fclose(image_file);
     free(image_data);
-    printf("[Server] Image saved to file at path \"tmp/apple.jpeg\".\n\n");
-
-    */
-    
-    int image_lenght = 0;
-    char * image_data = inputs.getFileAtIndex(0, &image_lenght);
-    FILE * image_file = fopen("tmp/apple.jpeg", "wb+");
-    fwrite(image_data, sizeof(char), image_lenght, image_file);
-    fclose(image_file);
-    free(image_data);
-    printf("[Server] Image saved to file at path \"tmp/apple.jpeg\".\n\n");
+    printf("[SERVER] Image saved to file at path \"tmp/apple.jpeg\".\n\n");
 
     CallStack stack = CallStack();
     stack.addConstChars("OK");
