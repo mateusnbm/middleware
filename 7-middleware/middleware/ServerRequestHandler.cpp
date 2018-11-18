@@ -55,12 +55,9 @@ void * handleConnection(void * arguments) {
             #endif
 
             string hash = sha256(argument->handler->password);
-            cout << "HASH: " << hash << endl;
             BLOWFISH bf(hash);
             string en_payload = string(data);
             string de_payload = bf.Decrypt_CBC(en_payload);
-
-            cout << "FUCK: " << de_payload << endl;
 
             free(data);
 

@@ -1,5 +1,5 @@
 //
-// server.cpp
+// serverb.cpp
 //
 
 #include <cassert>
@@ -9,8 +9,8 @@
 #include <algorithm>
 #include <string>
 
-#import "Lower.h"
-#import "Upper.h"
+#import "Sample.h"
+#import "Sleeper.h"
 
 #import "../middleware/Method.h"
 #import "../middleware/Invoker.h"
@@ -22,25 +22,26 @@
 
 using namespace std;
 
-int main(int const, const char ** const) {
+int main(int const, const char ** argv) {
 
     char buffer[1024] = {0};
     const char host[] = "127.0.0.1\0";
-    unsigned int port = 5000;
+    unsigned int port = atoi(argv[1]);
     unsigned int max_connections = 8;
 
-    Lower lowerMethod = Lower();
-    Upper upperMethod = Upper();
+    Sample sampleMethod = Sample();
+    Sleeper sleeperMethod = Sleeper();
 
     Invoker invoker = Invoker();
-    invoker.registerMethod("tolower", &lowerMethod);
-    invoker.registerMethod("toupper", &upperMethod);
+    invoker.registerMethod("sample", &sampleMethod);
+    invoker.registerMethod("sleeper", &sleeperMethod);
 
     ServerRequestHandler handler = ServerRequestHandler(host, port);
 
     if (handler.setupSocket(&invoker, max_connections) == 0) {
 
-        handler.secure("secret-password");
+        handler.compress();
+        //handler.secure("secret-password");
         handler.run();
 
     } else {
