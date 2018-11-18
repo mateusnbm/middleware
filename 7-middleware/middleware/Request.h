@@ -13,7 +13,7 @@ class Request {
     private:
 
         int len;
-        string data;
+        char * data;
 
     public:
 

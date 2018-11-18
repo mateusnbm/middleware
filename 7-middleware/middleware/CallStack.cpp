@@ -133,7 +133,7 @@ void CallStack::addVector(vector <float> & value) {
 
 }
 
-void CallStack::addFile(const char path[], bool compress) {
+void CallStack::addFile(const char path[]) {
 
     FILE * fp = fopen(path, "rb");
     fseek(fp, 0L, SEEK_END);

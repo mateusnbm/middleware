@@ -40,11 +40,11 @@ CallStack Sample::execute(CallStack inputs) {
 
     int image_lenght = 0;
     char * image_data = inputs.getFileAtIndex(8, &image_lenght);
-    FILE * image_file = fopen("apple.jpeg", "wb+");
+    FILE * image_file = fopen("tmp/apple.jpeg", "wb+");
     fwrite(image_data, sizeof(char), image_lenght, image_file);
     fclose(image_file);
     free(image_data);
-    printf("[Server] Image saved to file at path \"./apple.jpeg\".\n\n");
+    printf("[Server] Image saved to file at path \"tmp/apple.jpeg\".\n\n");
 
     CallStack stack = CallStack();
     stack.addConstChars("OK");

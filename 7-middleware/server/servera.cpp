@@ -40,6 +40,7 @@ int main(int const, const char ** argv) {
 
     if (handler.setupSocket(&invoker, max_connections) == 0) {
 
+        handler.compress();
         handler.secure("secret-password");
         handler.run();
 

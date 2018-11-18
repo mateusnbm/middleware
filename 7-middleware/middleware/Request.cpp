@@ -13,7 +13,14 @@
 Request::Request(char * data, int len) {
 
     this->len = len;
-    this->data = string(data);
+    this->data = (char *) malloc(sizeof(char)*(len+1));
+    this->data[len] = '\0';
+
+    for (int i = 0; i < len; i++) {
+
+        this->data[i] = data[i];
+
+    }
 
 }
 
@@ -57,9 +64,7 @@ Request::Request(char * descriptor) {
         k += len;
 
         this->len = len;
-        this->data = string(buffer);
-
-        free(buffer);
+        this->data = buffer;
 
     }
 
@@ -74,17 +79,25 @@ Request::~Request() {
 void Request::serialize(char ** buf, int * len) {
 
     string sizes = "<" + to_string(this->len) + ">";
-    string data = sizes + this->data;
+    int new_len = this->len + sizes.size();
+    char * buffer = (char *) malloc(sizeof(char)*(new_len+1));
 
-    unsigned int length = data.length()+1;
-    const char * tmp = data.c_str();
-    char * buffer = (char *) malloc(length*sizeof(char));
+    buffer[new_len] = '\0';
 
-    strcpy(buffer, tmp);
-    buffer[length-1] = '\0';
+    for (int i = 0; i < sizes.size(); i++) {
+
+        buffer[i] = sizes.c_str()[i];
+
+    }
+
+    for (int i = sizes.size(); i < new_len; i++) {
+
+        buffer[i] = this->data[i-sizes.size()];
+
+    }
 
     *buf = buffer;
-    *len = length;
+    *len = new_len;
 
 }
 
@@ -111,14 +124,14 @@ char * Request::serialize(int * len) {
 
 char * Request::getData() {
 
-    string item = this->data;
+    char * buffer = (char *) malloc(sizeof(char)*(this->len+1));
+    buffer[this->len] = '\0';
 
-    unsigned int len = item.length()+1;
-    const char * tmp = item.c_str();
-    char * buffer = (char *) malloc(len * sizeof(char));
+    for (int i = 0; i < this->len; i++) {
 
-    strcpy(buffer, tmp);
-    buffer[len-1] = '\0';
+        buffer[i] = this->data[i];
+
+    }
 
     return buffer;
 

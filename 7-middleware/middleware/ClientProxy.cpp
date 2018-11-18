@@ -19,6 +19,7 @@ ClientProxy::ClientProxy(const char host[], unsigned int port) {
     this->host = host;
     this->port = port;
     this->handler = new ClientRequestHandler(host, port);
+    this->compress_payloads = false;
 
 }
 
@@ -33,28 +34,62 @@ ClientProxy::~ClientProxy() {
             string de_payload = string("terminate");
             string en_payload = bf.Encrypt_CBC(de_payload);
 
-            string payload = "<" + to_string(en_payload.size()) + ">" + en_payload;
-            int request_len = payload.size() + 1;
+            char * str_call = (char *) malloc(sizeof(char)*(en_payload.size()+1));
+            std::copy(en_payload.begin(), en_payload.end(), str_call);
+            str_call[en_payload.size()] = '\0';
+            int str_call_len = en_payload.size();
 
-            char * request = (char *) malloc(sizeof(char)*(payload.size()+1));
-            std::copy(payload.begin(), payload.end(), request);
-            request[payload.size()] = '\0';
+            if (this->compress_payloads == true) {
 
-            this->handler->sendData(request, request_len);
+                int foo_len = 0;
+                char * foo = compress_data(str_call, str_call_len, &foo_len);
 
-            free(request);
+                free(str_call);
+
+                str_call = foo;
+                str_call_len = foo_len;
+
+            }
+
+            Request request = Request(str_call, str_call_len);
+
+            int request_len = 0;
+            char * request_str = request.serialize(&request_len);
+
+            this->handler->sendData(request_str, request_len);
 
         } else {
 
             char terminate[] = "<9>terminate\0";
 
-            this->handler->sendData(terminate, 12);
+            if (this->compress_payloads == true) {
+
+                int foo_len = 0;
+                char * foo = compress_data(terminate, 12, &foo_len);
+
+                this->handler->sendData(foo, foo_len);
+
+                free(foo);
+
+            } else {
+
+                this->handler->sendData(terminate, 12);
+
+            }
 
         }
 
     }
 
     delete this->handler;
+
+}
+
+int ClientProxy::compress() {
+
+    this->compress_payloads = true;
+
+    return 0;
 
 }
 
@@ -88,6 +123,7 @@ CallStack ClientProxy::invoke(const char method[], CallStack stack) {
     if (this->password.empty() == false) {
 
         string hash = sha256(this->password);
+        cout << "HASH: " << hash << endl;
         BLOWFISH bf(hash);
         string de_payload = string(str_call);
         string en_payload = bf.Encrypt_CBC(de_payload);
@@ -98,10 +134,30 @@ CallStack ClientProxy::invoke(const char method[], CallStack stack) {
         std::copy(en_payload.begin(), en_payload.end(), str_call);
         str_call[en_payload.size()] = '\0';
 
-        str_call_len = en_payload.size() + 1;
+        str_call_len = en_payload.size();
 
         #if DEBUG
         printf("[ClientProxy] Connection ID %i, Sending %i bytes, Encrypted data:\n\n%s\n\n", this->handler->socket_descriptor, str_call_len, str_call);
+        #endif
+
+    }
+
+    if (this->compress_payloads == true) {
+
+        #if DEBUG
+        printf("[ClientProxy] Connection ID %i, Sending %i bytes (before compression).\n\n", this->handler->socket_descriptor, str_call_len);
+        #endif
+
+        int foo_len = 0;
+        char * foo = compress_data(str_call, str_call_len, &foo_len);
+
+        free(str_call);
+
+        str_call = foo;
+        str_call_len = foo_len;
+
+        #if DEBUG
+        printf("[ClientProxy] Connection ID %i, Sending %i bytes (after compression).\n\n", this->handler->socket_descriptor, str_call_len);
         #endif
 
     }
@@ -136,6 +192,26 @@ CallStack ClientProxy::invoke(const char method[], CallStack stack) {
     data[n] = '\0';
 
     this->handler->readData(data, n);
+
+    if (this->compress_payloads == true) {
+
+        #if DEBUG
+        printf("[ClientProxy] Connection ID %i, Received %i bytes (before decompression).\n\n", this->handler->socket_descriptor, n);
+        #endif
+
+        int foo_len = 0;
+        char * foo = decompress_data(data, n, &foo_len);
+
+        free(data);
+
+        data = foo;
+        n = foo_len;
+
+        #if DEBUG
+        printf("[ClientProxy] Connection ID %i, Received %i bytes (after decompression).\n\n", this->handler->socket_descriptor, n);
+        #endif
+
+    }
 
     if (this->password.empty() == false) {
 

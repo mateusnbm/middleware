@@ -4,6 +4,8 @@
 
 #include "ServerRequestHandler.h"
 
+#define DEBUG 1
+
 #pragma mark -
 #pragma mark - Private
 
@@ -22,33 +24,56 @@ void * handleConnection(void * arguments) {
     while (1) {
 
         char * data;
+        int data_len;
 
-        printf("[1]\n");
+        argument->handler->readRequestData(argument->client_descriptor, &data, &data_len);
 
-        argument->handler->readRequestData(argument->client_descriptor, &data);
+        if (argument->handler->compress_payloads == true) {
 
-        printf("[2]\n");
+            #if DEBUG
+            printf("[ServerRequestHandler] Connection ID %i, Received %i bytes (before decompression).\n\n", argument->client_descriptor, data_len);
+            #endif
+
+            int foo_len = 0;
+            char * foo = decompress_data(data, data_len, &foo_len);
+
+            free(data);
+
+            data = foo;
+            data_len = foo_len;
+
+            #if DEBUG
+            printf("[ServerRequestHandler] Connection ID %i, Received %i bytes (after decompression).\n\n", argument->client_descriptor, data_len);
+            #endif
+
+        }
 
         if (argument->handler->password.empty() == false) {
 
-            printf("[ServerRequestHandler] Received data (encrypted): %s.\n", data);
+            #if DEBUG
+            printf("[ServerRequestHandler] Connection ID %i, Received %i bytes, Encrypted data:\n\n%s\n\n", argument->client_descriptor, data_len, data);
+            #endif
 
             string hash = sha256(argument->handler->password);
+            cout << "HASH: " << hash << endl;
             BLOWFISH bf(hash);
             string en_payload = string(data);
             string de_payload = bf.Decrypt_CBC(en_payload);
+
+            cout << "FUCK: " << de_payload << endl;
 
             free(data);
 
             data = (char *) malloc(sizeof(char)*(de_payload.size()+1));
             std::copy(de_payload.begin(), de_payload.end(), data);
             data[de_payload.size()] = '\0';
+            data_len = de_payload.size();
 
         }
 
-        printf("[3]\n");
-
-        printf("[ServerRequestHandler] Received data (decrypted): %s.\n", data);
+        #if DEBUG
+        printf("[ServerRequestHandler] Connection ID %i, Received %i bytes, Raw data:\n\n%s\n\n", argument->client_descriptor, data_len, data);
+        #endif
 
         if (strcmp(data, "terminate") == 0) { break; }
 
@@ -60,7 +85,9 @@ void * handleConnection(void * arguments) {
         char * result_str = result.serialize();
         int result_len = string(result_str).length()+1;
 
-        printf("[ServerRequestHandler] Send data (decrypted): %s.\n", result_str);
+        #if DEBUG
+        printf("[ServerRequestHandler] Connection ID %i, Sending %i bytes, Raw data:\n\n%s\n\n", argument->client_descriptor, result_len, result_str);
+        #endif
 
         if (argument->handler->password.empty() == false) {
 
@@ -75,9 +102,31 @@ void * handleConnection(void * arguments) {
             std::copy(en_payload.begin(), en_payload.end(), result_str);
             result_str[en_payload.size()] = '\0';
 
-            result_len = en_payload.size() + 1;
+            result_len = en_payload.size();// + 1;
 
-            printf("[ServerRequestHandler] Send data (encrypted): %s.\n", result_str);
+            #if DEBUG
+            printf("[ServerRequestHandler] Connection ID %i, Sending %i bytes, Encrypted data:\n\n%s\n\n", argument->client_descriptor, result_len, result_str);
+            #endif
+
+        }
+
+        if (argument->handler->compress_payloads == true) {
+
+            #if DEBUG
+            printf("[ServerRequestHandler] Connection ID %i, Sending %i bytes (before compression).\n\n", argument->client_descriptor, result_len);
+            #endif
+
+            int foo_len = 0;
+            char * foo = compress_data(result_str, result_len, &foo_len);
+
+            free(result_str);
+
+            result_str = foo;
+            result_len = foo_len;
+
+            #if DEBUG
+            printf("[ServerRequestHandler] Connection ID %i, Sending %i bytes (after compression).\n\n", argument->client_descriptor, result_len);
+            #endif
 
         }
 
@@ -94,7 +143,9 @@ void * handleConnection(void * arguments) {
 
     }
 
-    printf("Closing connection (%i).\n", argument->client_descriptor);
+    #if DEBUG
+    printf("[Server] Closing connection %i.\n\n", argument->client_descriptor);
+    #endif
 
     free(argument);
 
@@ -113,6 +164,7 @@ ServerRequestHandler::ServerRequestHandler(const char host[], unsigned int port)
     this->port = port;
     this->address = (char *) malloc(sizeof(char) * (strlen(host) + 7));
     this->client_address_description_len = sizeof(this->client_address_description);
+    this->compress_payloads = false;
 
     paux[0] = ':';
     paux[1] = ((port / 1000) % 10) + '0';
@@ -145,7 +197,7 @@ int ServerRequestHandler::readData(int socket_descriptor, char * buffer, unsigne
 
 }
 
-int ServerRequestHandler::readRequestData(int socket_descriptor, char ** data) {
+int ServerRequestHandler::readRequestData(int socket_descriptor, char ** data, int * len) {
 
     int n = 0;
     char b[1024] = {0};
@@ -166,16 +218,8 @@ int ServerRequestHandler::readRequestData(int socket_descriptor, char ** data) {
 
     this->readData(socket_descriptor, buf, n);
 
-    string item = string(buf);
-    unsigned int len = item.length()+1;
-    const char * tmp = item.c_str();
-    char * buffer = (char *) malloc(len * sizeof(char));
-    strcpy(buffer, tmp);
-    buffer[len-1] = '\0';
-
-    *data = buffer;
-
-    free(buf);
+    *data = buf;
+    *len = n;
 
     return 0;
 
@@ -223,6 +267,14 @@ int ServerRequestHandler::setupSocket(Invoker * invoker, unsigned int max_connec
 
 }
 
+int ServerRequestHandler::compress() {
+
+    this->compress_payloads = true;
+
+    return 0;
+
+}
+
 int ServerRequestHandler::secure(const char key[]) {
 
     this->password = string(key);
@@ -241,7 +293,7 @@ int ServerRequestHandler::run() {
 
         if (client_descriptor < 0) { return -1; }
 
-        printf("Accepted new connection (%i).\n", client_descriptor);
+        printf("[Server] Accepted new connection (%i).\n\n", client_descriptor);
 
         Argument * argument = (Argument *) malloc(sizeof(Argument));
 

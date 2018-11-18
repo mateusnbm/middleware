@@ -31,7 +31,7 @@ int main(int argc, char **) {
     sampleStack.addBoolean(false);
     sampleStack.addVector(ints);
     sampleStack.addVector(floats);
-    sampleStack.addFile("client/apple.jpg", true);
+    sampleStack.addFile("client/apple.jpg");
 
     char * param1 = sampleStack.getCharsAtIndex(0);
     printf("Parameter 1: %s\n", param1);

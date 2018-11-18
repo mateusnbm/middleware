@@ -21,6 +21,7 @@
 #import "CallStack.h"
 #import "Request.h"
 #import "Invoker.h"
+#import "Compression.h"
 
 using namespace std;
 
@@ -34,6 +35,7 @@ class ServerRequestHandler {
         const char * host;
         unsigned int port;
         string password;
+        bool compress_payloads;
 
         int socket_descriptor;
         struct sockaddr_in address_descriptor;
@@ -47,9 +49,10 @@ class ServerRequestHandler {
 
         int sendData(int socket_descriptor, char buffer[], unsigned int length);
         int readData(int socket_descriptor, char * buffer, unsigned int length);
-        int readRequestData(int socket_descriptor, char ** data);
+        int readRequestData(int socket_descriptor, char ** data, int * len);
 
         int setupSocket(Invoker * invoker, unsigned int max_connections);
+        int compress();
         int secure(const char key[]);
         int run();
 

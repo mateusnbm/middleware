@@ -30,7 +30,7 @@ class CallStack {
         void addBoolean(bool value);
         void addVector(vector <int> & value);
         void addVector(vector <float> & value);
-        void addFile(const char path[], bool compress);
+        void addFile(const char path[]);
 
         char * getItemAtIndex(int index);
         char * getCharsAtIndex(int index);

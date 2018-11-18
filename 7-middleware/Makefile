@@ -15,6 +15,7 @@ all:
 	$(shell g++ -c middleware/Blowfish.cpp)
 	$(shell g++ -c middleware/SHA256.cpp)
 	$(shell g++ -c middleware/Base64.cpp)
+	$(shell g++ -c middleware/Compression.cpp)
 
 	$(shell g++ -c middleware/ClientRequestHandler.cpp)
 	$(shell g++ -c middleware/ServerRequestHandler.cpp)
@@ -24,12 +25,12 @@ all:
 	$(shell g++ -c server/Sample.cpp)
 	$(shell g++ -c server/Sleeper.cpp)
 
-	$(shell g++ Call.o CallStack.o Request.o ClientProxy.o ClientRequestHandler.o Blowfish.o SHA256.o Base64.o -lz -o clienta client/clienta.cpp)
-	$(shell g++ Call.o CallStack.o Request.o ServerRequestHandler.o Invoker.o Blowfish.o SHA256.o Method.o Lower.o Upper.o Sample.o Sleeper.o Base64.o -o servera server/servera.cpp)
+	$(shell g++ Call.o CallStack.o Request.o ClientProxy.o ClientRequestHandler.o Blowfish.o SHA256.o Base64.o Compression.o -lz -o clienta client/clienta.cpp)
+	$(shell g++ Call.o CallStack.o Request.o ServerRequestHandler.o Invoker.o Blowfish.o SHA256.o Method.o Lower.o Upper.o Sample.o Sleeper.o Base64.o Compression.o -lz -o servera server/servera.cpp)
 
-	$(shell g++ Call.o CallStack.o Request.o ClientProxy.o ClientRequestHandler.o Blowfish.o SHA256.o Base64.o -o clientb client/clientb.cpp)
-	$(shell g++ Call.o CallStack.o Request.o ServerRequestHandler.o Invoker.o Blowfish.o SHA256.o Method.o Lower.o Upper.o Base64.o Sample.o Sleeper.o -o serverb server/serverb.cpp)
+	$(shell g++ Call.o CallStack.o Request.o ClientProxy.o ClientRequestHandler.o Blowfish.o SHA256.o Base64.o Compression.o -lz -o clientb client/clientb.cpp)
+	$(shell g++ Call.o CallStack.o Request.o ServerRequestHandler.o Invoker.o Blowfish.o SHA256.o Method.o Lower.o Upper.o Base64.o Sample.o Sleeper.o Compression.o -lz -o serverb server/serverb.cpp)
 
 clean:
 
-	rm -f *.o clienta clientb servera serverb
+	rm -f *.o *.compression clienta clientb servera serverb
