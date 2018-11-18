@@ -24,7 +24,7 @@ all:
 	$(shell g++ -c server/Sample.cpp)
 	$(shell g++ -c server/Sleeper.cpp)
 
-	$(shell g++ Call.o CallStack.o Request.o ClientProxy.o ClientRequestHandler.o Blowfish.o SHA256.o Base64.o -o clienta client/clienta.cpp)
+	$(shell g++ Call.o CallStack.o Request.o ClientProxy.o ClientRequestHandler.o Blowfish.o SHA256.o Base64.o -lz -o clienta client/clienta.cpp)
 	$(shell g++ Call.o CallStack.o Request.o ServerRequestHandler.o Invoker.o Blowfish.o SHA256.o Method.o Lower.o Upper.o Sample.o Sleeper.o Base64.o -o servera server/servera.cpp)
 
 	$(shell g++ Call.o CallStack.o Request.o ClientProxy.o ClientRequestHandler.o Blowfish.o SHA256.o Base64.o -o clientb client/clientb.cpp)

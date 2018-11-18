@@ -7,7 +7,6 @@
 #import <vector>
 #import <iostream>
 #import "Base64.h"
-#include "zlib.h"
 
 using namespace std;
 
