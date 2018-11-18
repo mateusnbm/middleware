@@ -15,7 +15,7 @@ using namespace std;
 int main(int argc, char ** argv) {
 
     const int repeat_count = 10000;
-    const char times_filename[] = "times/both.txt";
+    const char times_filename[] = "times/encryption.txt";
 
     const char host[] = "127.0.0.1\0";
     unsigned int port = atoi(argv[1]);
@@ -33,7 +33,7 @@ int main(int argc, char ** argv) {
 
     ClientProxy proxy = ClientProxy(host, port);
 
-    proxy.compress();
+    //proxy.compress();
     proxy.secure("secret-password");
 
     if (proxy.setup() < 0) {
